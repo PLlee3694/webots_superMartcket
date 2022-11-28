@@ -108,7 +108,7 @@ double height = 0.0; //爪子-0.05~0.45
 static void step();
 static void passive_wait(double sec);
 static void display_helper_message();
-void lift(double position);
+void lift(double position); 
 void moveFingers(double position);
 void init_all();
 void caculate_tmp_target(double tmp_posture[], double fin_posture[]);
@@ -143,7 +143,9 @@ int main(int argc, char **argv)
     step();
     Robot_State_Machine(&main_state, &grasp_state);
     // printf("State:%d\n", main_state);
-    keyboard_control(wb_keyboard_get_key(), &main_state);
+     keyboard_control(wb_keyboard_get_key(), &main_state);
+    //double position[]={2,1,0};
+    //Moveto_CertainPoint(position,0.1);
   }
 
   wb_robot_cleanup();
@@ -337,7 +339,7 @@ void Robot_State_Machine(int *main_state, int *grasp_state)
   }
   //上货
   case Item_Loading:
-  {
+    {
     get_gps_values(gps_values);
     // printf("GPS device: %.3f %.3f\n", gps_values[0], gps_values[1]);
     if(Moveto_CertainPoint(load_target_posture, 0.001))
@@ -429,30 +431,31 @@ int keyboard_control(int c, int *main_state)
     case 'C':
     {
       printf("Manually stopped！\n");
+      base_reset();
       *main_state = -1;
       break;
     }
-    case WB_KEYBOARD_UP:
+    case 'W':
       printf("Go forwards\n");
       base_forwards();
       break;
-    case WB_KEYBOARD_DOWN:
+    case 'S':
       printf("Go backwards\n");
       base_backwards();
       break;
-    case WB_KEYBOARD_LEFT:
+    case 'A':
       printf("Strafe left\n");
       base_strafe_left();
       break;
-    case WB_KEYBOARD_RIGHT:
+    case 'D':
       printf("Strafe right\n");
       base_strafe_right();
       break;
-    case WB_KEYBOARD_PAGEUP:
+    case 'E':
       printf("Turn left\n");
       base_turn_left();
       break;
-    case WB_KEYBOARD_PAGEDOWN:
+    case 'Q':
       printf("Turn right\n");
       base_turn_right();
       break;
@@ -462,16 +465,30 @@ int keyboard_control(int c, int *main_state)
       base_reset();
       // arm_reset();
       break;
-    case '+':
-    case 388:
-    case 65585:
+    case ']':
+      printf("Arm lift\n");
+      //moveFingers(0.01);
+      lift(height += 0.005);
+      break;
+    case '[':
+      printf("Arm drop\n");
+      //moveFingers(0.01);hebtrget
+      lift(height -= 0.005);
+      break;
+    case '=':
+    //case 388:
+    //case 65585:
       printf("Grip\n");
-      //  gripper_grip();
+      //gripper_grip();
+      moveFingers(width += 0.001);
+      //lift(0.020);
       break;
     case '-':
-    case 390:
+    //case 390:
       printf("Ungrip\n");
-      //  gripper_release();
+      //gripper_release();
+      moveFingers(width -= 0.001);
+      //lift(0.020);
       break;
     case 332:
     case WB_KEYBOARD_UP | WB_KEYBOARD_SHIFT:
@@ -523,7 +540,6 @@ bool Moveto_CertainPoint(double fin_posture[], double reach_precision)
     // printf("initial target： %.3f  %.3f  %.3f\n", initial_posture[0], initial_posture[1], initial_posture[2]);
     // printf("tmp target： %.3f  %.3f  %.3f\n", tmp_target_posture[0], tmp_target_posture[1], tmp_target_posture[2]);
     // printf("final target： %.3f  %.3f  %.3f\n\n", fin_posture[0], fin_posture[1], fin_posture[2]);
-   
     base_goto_run();
     return false;
   }
@@ -775,7 +791,7 @@ void moveFingers(double position)
 }
 
 //细分目标位姿
-double SUB = 2.0; //细分目标份数
+double SUB = 8.0; //细分目标份数
 void caculate_tmp_target(double tmp_posture[], double fin_posture[])
 {
   get_gps_values(gps_values);
