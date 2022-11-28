@@ -108,7 +108,7 @@ double height = 0.0; //爪子-0.05~0.45
 static void step();
 static void passive_wait(double sec);
 static void display_helper_message();
-void lift(double position); 
+void lift(double position);
 void moveFingers(double position);
 void init_all();
 void caculate_tmp_target(double tmp_posture[], double fin_posture[]);
@@ -127,7 +127,7 @@ bool Find_Goods(WbDeviceTag camera,char *good_name,int *item_grasped_id);
 bool Aim_and_Grasp(int *grasp_state, WbDeviceTag camera, int objectID);
 bool Moveto_CertainPoint(double fin_posture[], double reach_precision);
 void Robot_State_Machine(int *main_state, int *grasp_state);
-
+void interruptHandler();
 //*?                 main函数      <开始>            ?*//
 //主函数
 
@@ -142,10 +142,9 @@ int main(int argc, char **argv)
   {
     step();
     Robot_State_Machine(&main_state, &grasp_state);
+    
     // printf("State:%d\n", main_state);
-     keyboard_control(wb_keyboard_get_key(), &main_state);
-    //double position[]={2,1,0};
-    //Moveto_CertainPoint(position,0.1);
+    keyboard_control(wb_keyboard_get_key(), &main_state);
   }
 
   wb_robot_cleanup();
@@ -339,7 +338,7 @@ void Robot_State_Machine(int *main_state, int *grasp_state)
   }
   //上货
   case Item_Loading:
-    {
+  {
     get_gps_values(gps_values);
     // printf("GPS device: %.3f %.3f\n", gps_values[0], gps_values[1]);
     if(Moveto_CertainPoint(load_target_posture, 0.001))
@@ -350,7 +349,7 @@ void Robot_State_Machine(int *main_state, int *grasp_state)
       load_target_posture[2] = compass_angle;
       while (!Moveto_CertainPoint(load_target_posture, 0.01))
       {
-        step();//嘻嘻乱了时序 直接在里面循环了
+        step();//时序乱了
       }
       base_reset();
       printf("小心上货！\n");
@@ -363,13 +362,13 @@ void Robot_State_Machine(int *main_state, int *grasp_state)
       load_target_posture[2] = compass_angle;
       while (!Moveto_CertainPoint(load_target_posture, 0.01))
       {
-        step(); //嘻嘻乱了时序 直接在里面循环了
+        step(); //时序乱了
       }
       load_target_posture[2] = (compass_angle > PI) ? compass_angle - PI : compass_angle + PI; //原地自转回来
 
       while (!Moveto_CertainPoint(load_target_posture, 0.01))
       {
-        step(); //嘻嘻乱了时序 直接在里面循环了
+        step(); //时序乱了
       }
       moveFingers(width = 0.0);
       lift(height = 0.020);
@@ -435,27 +434,27 @@ int keyboard_control(int c, int *main_state)
       *main_state = -1;
       break;
     }
-    case 'W':
+    case WB_KEYBOARD_UP:
       printf("Go forwards\n");
       base_forwards();
       break;
-    case 'S':
+    case WB_KEYBOARD_DOWN:
       printf("Go backwards\n");
       base_backwards();
       break;
-    case 'A':
+    case WB_KEYBOARD_LEFT:
       printf("Strafe left\n");
       base_strafe_left();
       break;
-    case 'D':
+    case WB_KEYBOARD_RIGHT:
       printf("Strafe right\n");
       base_strafe_right();
       break;
-    case 'E':
+    case WB_KEYBOARD_PAGEUP:
       printf("Turn left\n");
       base_turn_left();
       break;
-    case 'Q':
+    case WB_KEYBOARD_PAGEDOWN:
       printf("Turn right\n");
       base_turn_right();
       break;
@@ -465,30 +464,16 @@ int keyboard_control(int c, int *main_state)
       base_reset();
       // arm_reset();
       break;
-    case ']':
-      printf("Arm lift\n");
-      //moveFingers(0.01);
-      lift(height += 0.005);
-      break;
-    case '[':
-      printf("Arm drop\n");
-      //moveFingers(0.01);hebtrget
-      lift(height -= 0.005);
-      break;
-    case '=':
-    //case 388:
-    //case 65585:
+    case '+':
+    case 388:
+    case 65585:
       printf("Grip\n");
-      //gripper_grip();
-      moveFingers(width += 0.001);
-      //lift(0.020);
+      //  gripper_grip();
       break;
     case '-':
-    //case 390:
+    case 390:
       printf("Ungrip\n");
-      //gripper_release();
-      moveFingers(width -= 0.001);
-      //lift(0.020);
+      //  gripper_release();
       break;
     case 332:
     case WB_KEYBOARD_UP | WB_KEYBOARD_SHIFT:
@@ -540,6 +525,7 @@ bool Moveto_CertainPoint(double fin_posture[], double reach_precision)
     // printf("initial target： %.3f  %.3f  %.3f\n", initial_posture[0], initial_posture[1], initial_posture[2]);
     // printf("tmp target： %.3f  %.3f  %.3f\n", tmp_target_posture[0], tmp_target_posture[1], tmp_target_posture[2]);
     // printf("final target： %.3f  %.3f  %.3f\n\n", fin_posture[0], fin_posture[1], fin_posture[2]);
+   
     base_goto_run();
     return false;
   }
@@ -791,7 +777,7 @@ void moveFingers(double position)
 }
 
 //细分目标位姿
-double SUB = 8.0; //细分目标份数
+double SUB = 2.0; //细分目标份数
 void caculate_tmp_target(double tmp_posture[], double fin_posture[])
 {
   get_gps_values(gps_values);
